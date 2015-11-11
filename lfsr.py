@@ -18,12 +18,16 @@ parser.add_argument('--huge', dest='allow_huge', action='store_const',
                     const=True, default=False,
                     help='By default, only first 100 lines are printed. This discards this limitation')
 
-def generate_lfsr(poly, start, huge):
-    max_poly = max(poly)
-    top_bottom = "+" + "-" * ((max_poly + 1) * 2 - 1) + "+" + 3 * "-" + "+\n"
-    str_print = top_bottom
+def fail_exit(msg):
+    print(msg)
+    sys.exit(0)
 
+def generate_lfsr(poly, start, huge):
+    top_bottom = "+" + "-" * (max(poly) * 2 + 1) + "+" + 3 * "-" + "+\n"
+
+    # Initialize first line
     line = start[:]
+    str_print = top_bottom
     ctr = 0
 
     while True:
@@ -37,10 +41,9 @@ def generate_lfsr(poly, start, huge):
         str_print += "|"
         for b in line:
             str_print += str(b) + " "
+        str_print = str_print[:-1] + "| " + str(line[-1]) + " |\n"
 
-        str_print = str_print[:-1] + "| " + str(line[-1]) + " |"
-        str_print += "\n"
-
+        # Calculate next line, shift
         nxt = reduce(iadd, [line[i] for i in poly]) % 2
         line.pop()
         line.insert(0, nxt)
@@ -61,8 +64,7 @@ if __name__ == "__main__":
     valid = validator.match(poly_str)
 
     if not valid:
-        print("Invalid polynomial. Exiting.")
-        sys.exit(1)
+        fail_exit("Invalid polynomial. Exiting.")
 
     poly = set()
     for v in re.finditer("x(\d*)\+", poly_str):
@@ -75,12 +77,10 @@ if __name__ == "__main__":
             # Could include more syntactic checks, but I dont want to.
             start = [int(i) % 2 for i in args.start]
         except Exception as e:
-            print("Cannot parse starting register value. Exiting")
-            sys.exit(1)
+            fail_exit("Cannot parse starting register value. Exiting")
 
         if len(start) != max(poly) + 1:
-            print("Bad length for initial register value. %d!=%d. Exiting" % (len(start), max(poly) + 1))
-            sys.exit(1)
+            fail_exit("Bad length for initial register value. %d!=%d. Exiting" % (len(start), max(poly) + 1))
     else:
         start = [0] * max(poly) + [1]
 
